@@ -23,15 +23,15 @@ void init(FILE *file) {
   printf("width = %d\n", width);
 }
 
-void read_matrix(int8_t (*aMat)[height][width], int8_t (*bMat)[height][width],
-                 int8_t (*cMat)[height][width], FILE *file) {
+void read_matrix(int8_t aMat[height][width], int8_t bMat[height][width],
+                 int8_t cMat[height][width], FILE *file) {
 
   size_t i = 0;
   size_t j = 0;
   for (size_t c = sizeof(uint32_t); c < 7 + height + width * 3; c++) {
-    fread(&(*aMat)[i][j], sizeof(int8_t), 1, file);
-    fread(&(*bMat)[i][j], sizeof(int8_t), 1, file);
-    fread(&(*cMat)[i][j], sizeof(int8_t), 1, file);
+    fread(&aMat[i][j], sizeof(int8_t), 1, file);
+    fread(&bMat[i][j], sizeof(int8_t), 1, file);
+    fread(&cMat[i][j], sizeof(int8_t), 1, file);
 
     if (j == width - 1) {
       j = 0;
@@ -56,11 +56,11 @@ void init_kernel(FILE *file) {
   printf("Dwidth = %d\n", Dwidth);
 }
 
-void read_kernel(int8_t (*d)[Dheight][Dwidth], FILE *file) {
+void read_kernel(int8_t d[Dheight][Dwidth], FILE *file) {
   size_t i = 0;
   size_t j = 0;
   for (size_t k = 0; k < Dwidth * Dheight; k++) {
-    fread(&(*d)[i][j], sizeof(int8_t), 1, file);
+    fread(&d[i][j], sizeof(int8_t), 1, file);
     if (j == Dwidth - 1) {
       j = 0;
       i++;
@@ -84,7 +84,37 @@ int8_t normilize(int32_t s) {
   return s;
 }
 
+void doMagic(int8_t out[height][width], int8_t input[height][width],
+             int8_t kernel[Dheight][Dwidth]) {
+
+  int8_t yOffset = (height - 1) / 2;
+  int8_t xOffset = (width - 1) / 2;
+  for (size_t i = 0; i < height; i++) {
+    for (size_t j = 0; j < width; j++) {
+      int32_t s = 0;
+
+      for (size_t i_d = 0; i_d < Dheight; i_d++) {
+        for (size_t j_d = 0; j_d < Dwidth; j_d++) {
+          int8_t matrix_el;
+          // если выходим за пределы массива, то 0
+          if ((i - yOffset + i_d < 0) || (j - xOffset + j_d < 0) ||
+              (i - yOffset + i_d > height - 1) ||
+              (j - xOffset + j_d > width - 1)) {
+            matrix_el = 0;
+          } else {
+            matrix_el = input[i - yOffset + i_d][j - xOffset + j_d] * kernel[i_d][j_d];
+          }
+          s += matrix_el;
+        }
+      }
+
+      out[i][j] = normilize(s);
+    }
+  }
+}
+
 int main(int argc, char **argv) {
+
   if (argc != 5) {
     return 10;
   }
@@ -114,11 +144,11 @@ int main(int argc, char **argv) {
   int8_t a[height][width];
   int8_t b[height][width];
   int8_t c[height][width];
-  read_matrix(&a, &b, &c, inputFile);
+  read_matrix(a, b, c, inputFile);
 
   init_kernel(inputFile);
   int8_t d[Dheight][Dwidth];
-  read_kernel(&d, inputFile);
+  read_kernel(d, inputFile);
 
   for (size_t i = 0; i < Dheight; i++) {
     for (size_t j = 0; j < Dwidth; j++) {
@@ -131,30 +161,10 @@ int main(int argc, char **argv) {
   int8_t bOut[height][width];
   int8_t cOut[height][width];
 
-  int8_t yOffset = (height - 1) / 2;
-  int8_t xOffset = (width - 1) / 2;
-  for (size_t i = 0; i < height; i++) {
-    for (size_t j = 0; j < width; j++) {
-      int32_t s = 0;
+  doMagic(aOut, a, d);
+  doMagic(bOut, b, d);
+  doMagic(cOut, c, d);
 
-      for (size_t i_d = 0; i_d < Dheight; i_d++) {
-        for (size_t j_d = 0; j_d < Dwidth; j_d++) {
-          int8_t matrix_el;
-          // если выходим за пределы массива, то 0
-          if ((i - yOffset + i_d < 0) || (j - xOffset + j_d < 0) ||
-              (i - yOffset + i_d > height - 1) ||
-              (j - xOffset + j_d > width - 1)) {
-            matrix_el = 0;
-          } else {
-            matrix_el = a[i - yOffset + i_d][j - xOffset + j_d] * d[i_d][j_d];
-          }
-          s += matrix_el;
-        }
-      }
-
-      aOut[i][j] = normilize(s) ;
-    }
-  }
   printf("\n");
   for (size_t i = 0; i < height; i++) {
     for (size_t j = 0; j < width; j++) {
