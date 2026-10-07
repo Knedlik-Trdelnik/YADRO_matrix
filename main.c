@@ -79,7 +79,7 @@ int8_t normilize(int32_t s) {
   }
   if (s < 0) {
     s = -s;
-    s = (-s) % 241;
+    s = (s) % 241;
   }
   return s;
 }
@@ -87,22 +87,30 @@ int8_t normilize(int32_t s) {
 void doMagic(int8_t out[height][width], int8_t input[height][width],
              int8_t kernel[Dheight][Dwidth]) {
 
-  int8_t yOffset = (height - 1) / 2;
-  int8_t xOffset = (width - 1) / 2;
-  for (size_t i = 0; i < height; i++) {
-    for (size_t j = 0; j < width; j++) {
-      int32_t s = 0;
+  int yOffset = (Dheight - 1) / 2;
+  int xOffset = (Dwidth - 1) / 2;
+  for (int i = 0; i < height; i++) {
+    for (int j = 0; j < width; j++) {
+      int s = 0;
 
-      for (size_t i_d = 0; i_d < Dheight; i_d++) {
-        for (size_t j_d = 0; j_d < Dwidth; j_d++) {
-          int8_t matrix_el;
+      for (int i_d = 0; i_d < Dheight; i_d++) {
+        for (int j_d = 0; j_d < Dwidth; j_d++) {
+          int32_t matrix_el;
           // если выходим за пределы массива, то 0
-          if ((i - yOffset + i_d < 0) || (j - xOffset + j_d < 0) ||
-              (i - yOffset + i_d > height - 1) ||
-              (j - xOffset + j_d > width - 1)) {
+
+          if (((int)i - (int)yOffset + (int)i_d < 0) ||
+              ((int)j - (int)xOffset + (int)j_d < 0) ||
+              ((int)i - (int)yOffset + (int)i_d > (int)height - 1) ||
+              ((int)j - (int)xOffset + (int)j_d > (int)width - 1)) {
             matrix_el = 0;
           } else {
-            matrix_el = input[i - yOffset + i_d][j - xOffset + j_d] * kernel[i_d][j_d];
+            matrix_el = (int)input[i - yOffset + i_d][j - xOffset + j_d] *
+                        (int)kernel[i_d][j_d];
+            //int a = i - yOffset + i_d;
+            //int b = j - xOffset + j_d;
+            //printf("\n%d %d %d\n", matrix_el, a, b);
+            //printf("%x\n", (int8_t)input[i - yOffset + i_d][j - xOffset + j_d]);
+
           }
           s += matrix_el;
         }
@@ -161,14 +169,26 @@ int main(int argc, char **argv) {
   int8_t bOut[height][width];
   int8_t cOut[height][width];
 
-  doMagic(aOut, a, d);
-  doMagic(bOut, b, d);
-  doMagic(cOut, c, d);
+   doMagic(aOut, a, d);
+   doMagic(bOut, b, d);
+   doMagic(cOut, c, d);
 
   printf("\n");
   for (size_t i = 0; i < height; i++) {
     for (size_t j = 0; j < width; j++) {
-      printf("%d ", (uint8_t)aOut[i][j]);
+      printf("%x ", (uint8_t)a[i][j]);
+      printf("%x ", (uint8_t)b[i][j]);
+      printf("%x ", (uint8_t)c[i][j]);
+    }
+  }
+  printf("\n");
+
+  printf("\n");
+  for (size_t i = 0; i < height; i++) {
+    for (size_t j = 0; j < width; j++) {
+      printf("%x ", (uint8_t)aOut[i][j]);
+      printf("%x ", (uint8_t)bOut[i][j]);
+      printf("%x ", (uint8_t)cOut[i][j]);
     }
   }
   printf("\n");
