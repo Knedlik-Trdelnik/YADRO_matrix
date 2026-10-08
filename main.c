@@ -197,6 +197,7 @@ int main(int argc, char **argv) {
   doMagic(bOut, b, d);
   doMagic(cOut, c, d);
 
+  free_i8_2d(d, Dheight);
   free_u8_2d(a, height);
   free_u8_2d(b, height);
   free_u8_2d(c, height);
