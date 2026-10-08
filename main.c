@@ -13,13 +13,6 @@ uint16_t Dwidth;
 char *inputFileName;
 char *outputFileName;
 
-#include <stdlib.h>
-#include <stdint.h>
-
-
-
-#include <stdlib.h>
-#include <stdint.h>
 
 uint8_t **alloc_u8_2d(size_t rows, size_t cols) {
     uint8_t **m = malloc(rows * sizeof(uint8_t *));
